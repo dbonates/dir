@@ -18,7 +18,7 @@ Of course, feel free to download the source and compile it from your local machi
 
 ### Known Issues:
 
-I couldn't manage to update the alias for current terminal window. Once they're saved, you can open a new terminal to use them, or running `source ~/.bash_profile` by hand.
+I couldn't manage to update the alias for current terminal window from inside the app. But once they're saved, they will be available as soon you refresh the shell by running`source ~/.bash_profile` by hand. Or of course, open fresh terminal screen and they will be there for you 😉.
 
 
 ---
