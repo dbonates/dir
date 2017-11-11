@@ -26,6 +26,8 @@ int main(int argc, const char * argv[]) {
         
         
         NSString *commandArgument = [arguments objectAtIndex: 1];
+        
+        
         NSString *requestedAlias = arguments.count < 3 ? Nil : [arguments objectAtIndex: 2];
         
         
@@ -43,15 +45,13 @@ int main(int argc, const char * argv[]) {
         else if([commandArgument isEqualToString:@"-d"]) {
             
             return [manager deleteDirWithAlias: requestedAlias];
-            
-        } else {
-            
-            [Logger printInvalidArgument];
-            return 1;
+        }
+        else if ([commandArgument isEqualToString:@"-u"]) {
+            return [manager updateShell];
         }
             
     }
     
-    return 0;
+    return 1;
 }
 

@@ -15,11 +15,13 @@ Just download the latest binary from releases page and drop it into the `/usr/lo
 
 Of course, feel free to download the source and compile it from your local machine.
 
+
+### Known Issues:
+
+I couldn't manage to update the alias for current terminal window. Once they're saved, you can open a new terminal to use them, or running `source ~/.bash_profile` by hand.
+
+
 ---
-
-TODO:
-- integrate with alias on `.bash_profile` so just calling the alias with get you into 🤘
-
 
 ## License
 

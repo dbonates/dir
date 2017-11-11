@@ -19,6 +19,7 @@
 - (void)createDbFileIfNeeded;
 
 @property (nonatomic, retain) NSString *dbFile;
+@property (nonatomic, retain) NSString *aliasFile;
 @property (nonatomic, retain) NSMutableDictionary *allDirs;
 
 @end
@@ -36,6 +37,22 @@
     return [homeDir stringByAppendingString:@"/.dir_db.plist"];
 }
 
+- (NSString *)aliasFile {
+    NSString *homeDir = NSHomeDirectory();
+    return [homeDir stringByAppendingString:@"/.db_alias"];
+}
+
+- (NSString *)bashProfileFile {
+    NSString *homeDir = NSHomeDirectory();
+    return [homeDir stringByAppendingString:@"/.bash_profile"];
+}
+
+- (NSString *)bashProfileFileForBackup {
+    NSString *homeDir = NSHomeDirectory();
+    NSString *bashfile_bkp = [NSString stringWithFormat: @"/.bash_profile_%@", [[NSProcessInfo processInfo] globallyUniqueString]];
+    return [homeDir stringByAppendingString:bashfile_bkp];
+}
+
 
 - (void)createDbFileIfNeeded {
     
@@ -47,9 +64,9 @@
         BOOL success = [plist writeToFile:self.dbFile atomically:YES];
         
         if (success) {
-            printf("db file saved!");
+            printf("db file created!");
         } else {
-            printf("error saving plist");
+            printf("error creating plist");
         }
     }
     
@@ -61,9 +78,29 @@
     }
 }
 
+- (void)createAliasFileIfNeeded {
+    
+    NSFileManager *fm = [[NSFileManager alloc] init];
+    
+    if(![fm fileExistsAtPath: self.aliasFile]) {
+        
+        NSError *error;
+        BOOL success = [@"" writeToFile:self.dbFile atomically:YES encoding:NSUTF8StringEncoding error: &error];
+        
+        if (success) {
+            printf("alias file created!");
+        } else {
+            printf("error creating alias file");
+        }
+    }
+    
+}
+
+
+
 - (int)saveDirWithAlias:(NSString *)alias {
     
-    if (![self validAlias: alias deleting: NO]) {
+    if (![self validAlias: alias shouldExist: NO]) {
         return 1;
     }
     
@@ -73,12 +110,16 @@
     
     // add new dir
     [self.allDirs setValue:currentpath forKey:alias];
+    
+    if ([self updateShell] != 0) {
+        [Logger log: @"\nShell not updated. Try it running `dir -u` at end.\n\n"];
+    }
     return [self saveUpdatedDirs];
 }
 
 - (int)deleteDirWithAlias: (NSString *)alias {
     
-    if (![self validAlias: alias deleting: YES]) {
+    if (![self validAlias: alias shouldExist: YES]) {
         return 1;
     }
     
@@ -86,9 +127,81 @@
     
     [self.allDirs removeObjectForKey: alias];
     
-    
+    if ([self updateShell] != 0) {
+        [Logger log: @"\nShell not updated. Try it running `dir -u` at end.\n\n"];
+    }
+
     return [self saveUpdatedDirs];
 }
+
+- (int)updateShell {
+    
+    __block NSString *dirList = @"";
+    
+    [allDirs enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL * stop) {
+        
+        NSString *dirInfo = [NSString stringWithFormat: @"alias %@='cd %@'\n", key, obj];
+        dirList = [dirList stringByAppendingString: dirInfo];
+        
+    }];
+    
+    [self createAliasFileIfNeeded];
+    
+    [self updateBashProfileIfNeeded];
+    
+    
+    NSError *error;
+    
+    BOOL success = [dirList writeToFile: self.aliasFile atomically:YES encoding:NSUTF8StringEncoding error:&error];
+    
+    if (!success) {
+        [Logger log: @"\ncouldn't save alias file, exiting...\n"];
+        return 1;
+    }
+    
+    [Logger log: @"\nalias file updated.\n\n"];
+    
+    system("source ~/.bash_profile");
+    
+    return 0;
+}
+                              
+                              
+- (void)updateBashProfileIfNeeded {
+      
+      NSError *error;
+      NSString *bashProfileContents = [NSString stringWithContentsOfFile: [self bashProfileFile] encoding:NSUTF8StringEncoding error: &error];
+      
+      if (error != nil) {
+          [Logger log: @"\nerror getting .bash_profile\n"];
+          return;
+      }
+      
+      NSString *injectString = @"source ~/.db_alias";
+      
+      if ([bashProfileContents rangeOfString:injectString].location == NSNotFound) {
+          
+          BOOL success = [bashProfileContents writeToFile: [self bashProfileFileForBackup] atomically:YES encoding:NSUTF8StringEncoding error:&error];
+          
+          if (!success) {
+              [Logger log: @"\ncouldn't backup .bash_profile file, too dangerous to continue, exiting...\n"];
+              return;
+          }
+          
+          bashProfileContents = [bashProfileContents stringByAppendingString:[NSString stringWithFormat:@"\n%@\n", injectString]];
+          success = [bashProfileContents writeToFile:[self bashProfileFile] atomically:YES encoding:NSUTF8StringEncoding error:&error];
+          
+          if (!success) {
+              [Logger log: @"\ncouldn't save .bash_profile file, too dangerous to continue, exiting...\n"];
+              return;
+          }
+          
+          [Logger log: @"\n.bash_profile updated\n"];
+          
+      }
+                                  
+}
+
 
 
 - (int)saveUpdatedDirs {
@@ -105,7 +218,7 @@
 }
 
 
-- (BOOL)validAlias: (NSString *)alias deleting:(BOOL)deleting {
+- (BOOL)validAlias: (NSString *)alias shouldExist:(BOOL)shouldExist {
     
     if (alias == Nil || alias.length < 1) {
         [Logger printWrongParameters];
@@ -116,7 +229,7 @@
     
     if (aliasInUse) {
         
-        if(deleting) { //for deleting
+        if(shouldExist) { //should exist to proceed
             return YES;
             
         } else { // alias in use cannot do save operation
@@ -126,7 +239,7 @@
         
     } else {
         
-        if(deleting) { //for deleting we need an alias!
+        if(shouldExist) { //should exist to proceed
             
             [Logger log: [NSString stringWithFormat:@"\nthis alias %s%@%s doesn't exists.\n\n", KYEL, alias, KWHT]];
             return NO;

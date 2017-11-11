@@ -82,7 +82,7 @@
 
 
 + (void)printWrongParameters {
-    printf("\n%sInvalid parameters for this options, please specify one!%s", KRED, KWHT);
+    printf("\n%sInvalid parameters for this option, please specify one!%s", KRED, KWHT);
     [self printHelp];
 }
 
