@@ -9,6 +9,12 @@ I've made this tool to bookmark a directory while I'm on it, so when I want to c
 
 While on a directory, fire the app with parameter `-s` and an alias. Then, it will be as an alias on your shell as soon as you refresh your `~/.bash_profile` file.
 
+So, if you fire this command:
+
+`dir -s project`
+
+Your current directory will be saved with the `project` alias. Later, you just need to type `project` and you will be there.
+
 ### Instalation:
 
 Just download the latest binary from releases page and drop it into the `/usr/local/bin/` and you're ready to go.
