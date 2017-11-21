@@ -7,7 +7,7 @@ I've made this tool to bookmark a directory while I'm on it, so when I want to c
 
 ### How it works
 
-While on a directory, fire the app with parameter `-s` and an alias. Later, you just need to call `dir` with that alias as a parameter and you'll be there!
+While on a directory, fire the app with parameter `-s` and an alias. Then, it will be as an alias on your shell as soon as you refresh your `~/.bash_profile` file.
 
 ### Instalation:
 
